@@ -29,6 +29,11 @@ const uploadDataToFirestore = async (data, collectionName) => {
   
   const generateAdditionalPlaylists = (users, tracks, count) => {
     const newPlaylists = [];
+    const genresAndSubgenres = [
+      "Trap", "Techno", "Techhouse", "Trance", "Psytrance", 
+      "Dark Trap", "DnB", "Hardstyle", "Underground Rap", 
+      "Trap Metal", "Emo", "Rap", "RnB", "Pop", "Hiphop"
+    ];
     for (let i = 1; i <= count; i++) {
       const randomUserId = users[Math.floor(Math.random() * users.length)].user_id;
       const playlistTracks = [];
@@ -37,12 +42,16 @@ const uploadDataToFirestore = async (data, collectionName) => {
         const randomTrackId = tracks[Math.floor(Math.random() * tracks.length)].id;
         playlistTracks.push(randomTrackId);
       }
+
+        // Randomly select genre and subgenre
+      const randomGenreIndex = Math.floor(Math.random() * genresAndSubgenres.length);
+      const randomSubgenreIndex = Math.floor(Math.random() * genresAndSubgenres.length);
   
       newPlaylists.push({
         id: `playlist_${i}`,
         name: `Playlist ${i}`,
-        genre: "Genre", // Modify as needed
-        subgenre: "Subgenre", // Modify as needed
+        genre: genresAndSubgenres[randomGenreIndex],
+        subgenre: genresAndSubgenres[randomSubgenreIndex], 
         user_id: randomUserId,
         playlist_tracks: playlistTracks
       });
@@ -55,6 +64,7 @@ const parseAndUploadCSV = () => {
   // Replace with the path to your CSV file in the public folder
   const csvFilePath = process.env.PUBLIC_URL + '/data/spotify_songs_small.csv'; 
   const users = generateRandomUsers(15); // Generate 15 user entries
+  
 
   Papa.parse(csvFilePath, {
     download: true,
@@ -166,12 +176,15 @@ const parseAndUploadCSV = () => {
       playlists.forEach(playlist => {
         playlist.playlist_tracks = playlistTracks[playlist.id];
       });
-      console.log("printing tracks",tracks.length);
-      console.log("printing albums",albums.length);
-      console.log("printing playlists",playlists.length);
+
 
       const additionalPlaylists = generateAdditionalPlaylists(users, tracks, 15);
       playlists.push(...additionalPlaylists); // Add new playlists to the existing array
+
+      console.log("printing tracks",tracks.length);
+      console.log("printing albums",albums.length);
+      console.log("printing playlists",playlists.length);
+      console.log("printing users",users.length)
 
     //   Upload data to Firestore
     //  uploadDataToFirestore(users, "Users"); // Upload users to Firestore
