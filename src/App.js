@@ -1,22 +1,21 @@
 import logo from './logo.svg';
 import './App.css';
+import uploadData from './uploadData'; // Ensure this is the correct path
 
 function App() {
+  
+  // Function to handle the click event
+  const handleUploadClick = () => {
+    uploadData();
+  };
+
   return (
     <div className="App">
       <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+
+        {/* Link or button to trigger data upload */}
+        <button onClick={handleUploadClick}>Run Data Upload</button>
       </header>
     </div>
   );
