@@ -13,10 +13,48 @@ const uploadDataToFirestore = async (data, collectionName) => {
     });
   };
 
+
+  const generateRandomUsers = (count) => {
+    const users = [];
+    for (let i = 1; i <= count; i++) {
+      users.push({
+        user_id: `user_${i}`,
+        user_name: `User Name ${i}`,
+        email: `user${i}@example.com`,
+        created_at: new Date().toISOString()
+      });
+    }
+    return users;
+  };
+  
+  const generateAdditionalPlaylists = (users, tracks, count) => {
+    const newPlaylists = [];
+    for (let i = 1; i <= count; i++) {
+      const randomUserId = users[Math.floor(Math.random() * users.length)].user_id;
+      const playlistTracks = [];
+      const numberOfTracks = Math.floor(Math.random() * 6) + 5; // 5 to 10 tracks
+      for (let j = 0; j < numberOfTracks; j++) {
+        const randomTrackId = tracks[Math.floor(Math.random() * tracks.length)].id;
+        playlistTracks.push(randomTrackId);
+      }
+  
+      newPlaylists.push({
+        id: `playlist_${i}`,
+        name: `Playlist ${i}`,
+        genre: "Genre", // Modify as needed
+        subgenre: "Subgenre", // Modify as needed
+        user_id: randomUserId,
+        playlist_tracks: playlistTracks
+      });
+    }
+    return newPlaylists;
+  };
+
 // Function to parse CSV and organize data 
 const parseAndUploadCSV = () => {
   // Replace with the path to your CSV file in the public folder
   const csvFilePath = process.env.PUBLIC_URL + '/data/spotify_songs_small.csv'; 
+  const users = generateRandomUsers(15); // Generate 15 user entries
 
   Papa.parse(csvFilePath, {
     download: true,
@@ -132,7 +170,11 @@ const parseAndUploadCSV = () => {
       console.log("printing albums",albums.length);
       console.log("printing playlists",playlists.length);
 
+      const additionalPlaylists = generateAdditionalPlaylists(users, tracks, 15);
+      playlists.push(...additionalPlaylists); // Add new playlists to the existing array
+
     //   Upload data to Firestore
+    //  uploadDataToFirestore(users, "Users"); // Upload users to Firestore
     //  uploadDataToFirestore(tracks, "Track");
     //   uploadDataToFirestore(albums, "Album");
     //   uploadDataToFirestore(playlists, "Playlist");
