@@ -189,9 +189,9 @@ const parseAndUploadCSV = () => {
 
     //   Upload data to Firestore
       uploadDataToFirestore(users, "Users"); // Upload users to Firestore
-      // uploadDataToFirestore(tracks, "Tracks");
-      // uploadDataToFirestore(albums, "Album");
-      // uploadDataToFirestore(playlists, "Playlist");
+      uploadDataToFirestore(tracks, "Tracks");
+      uploadDataToFirestore(albums, "Album");
+      uploadDataToFirestore(playlists, "Playlist");
     }
   });
 };
