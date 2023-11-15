@@ -18,7 +18,7 @@ const uploadDataToFirestore = async (data, collectionName) => {
     const users = [];
     for (let i = 1; i <= count; i++) {
       users.push({
-        user_id: `user_${i}`,
+        id: `user_${i}`, // Changed from user_id to id
         user_name: `User Name ${i}`,
         email: `user${i}@example.com`,
         created_at: new Date().toISOString()
@@ -26,6 +26,7 @@ const uploadDataToFirestore = async (data, collectionName) => {
     }
     return users;
   };
+  
   
   const generateAdditionalPlaylists = (users, tracks, count) => {
     const newPlaylists = [];
@@ -187,10 +188,10 @@ const parseAndUploadCSV = () => {
       console.log("printing users",users.length)
 
     //   Upload data to Firestore
-      // uploadDataToFirestore(users, "Users"); // Upload users to Firestore
-      uploadDataToFirestore(tracks, "Tracks2");
-      uploadDataToFirestore(albums, "Album");
-      uploadDataToFirestore(playlists, "Playlist");
+      uploadDataToFirestore(users, "Users"); // Upload users to Firestore
+      // uploadDataToFirestore(tracks, "Tracks");
+      // uploadDataToFirestore(albums, "Album");
+      // uploadDataToFirestore(playlists, "Playlist");
     }
   });
 };
