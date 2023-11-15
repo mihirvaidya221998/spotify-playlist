@@ -3,13 +3,13 @@ import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCKgBGymKESw8HLzxMJzDvq5qB3qpHb8Qc",
-  authDomain: "spotify-7bf86.firebaseapp.com",
-  projectId: "spotify-7bf86",
-  storageBucket: "spotify-7bf86.appspot.com",
-  messagingSenderId: "638875676979",
-  appId: "1:638875676979:web:b2e362850950b4436bce46",
-  measurementId: "G-JWSV7MY08B"
+  apiKey: "AIzaSyC9Ui4i6AUb-O7NYqJhIIETXmbhb7odmsE",
+  authDomain: "spotifygenerator-c5520.firebaseapp.com",
+  projectId: "spotifygenerator-c5520",
+  storageBucket: "spotifygenerator-c5520.appspot.com",
+  messagingSenderId: "577116984831",
+  appId: "1:577116984831:web:ae0211f9c1f653dee7c3ca",
+  measurementId: "G-X4RQFXYYEB"
 };
 
 // Initialize Firebase
