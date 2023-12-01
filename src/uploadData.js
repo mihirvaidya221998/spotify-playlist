@@ -162,7 +162,6 @@ const parseAndUploadCSV = () => {
         //       "duration_ms": 210000
         //     },
         //     "album_id": "unique_album_id", // Foreign key referencing Album
-        //     "artist_id": "unique_artist_id" // Foreign key referencing Artist
         //   },
         //   "Album": {
         //     "album_id": "unique_album_id",
