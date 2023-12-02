@@ -14,7 +14,8 @@ function Home() {
     <header className="App-header">
       <img src={logo} className="App-logo" alt="logo" />
       <p>Welcome to Spotify Generator, where you can create custom spotify playlists.</p>
-      <button onClick={() => navigate('/upload')}>Proceed</button>
+      <button onClick={() => navigate('/playlists')}>Show all data</button>
+      <button onClick={() => navigate('/upload')}>upload page (csv)</button>
     </header>
   );
 }
@@ -30,7 +31,6 @@ function Upload() {
     <div className="App">
       <header className="App-header">
         <button onClick={handleUploadClick}>Run Data Upload</button>
-        <button onClick={() => navigate('/playlists')}>Playlists Page</button>
       </header>
     </div>
   );
