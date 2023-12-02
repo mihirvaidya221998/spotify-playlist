@@ -1,0 +1,37 @@
+/* Playlists.css */
+
+.Playlists {
+    margin: 20px;
+    font-family: Arial, sans-serif;
+  }
+  
+  .Playlists h1 {
+    color: #333;
+    text-align: center;
+  }
+  
+  .Playlists h2 {
+    color: #666;
+    margin-top: 20px;
+  }
+  
+  .Playlists .content {
+    display: flex;
+    justify-content: space-around;
+  }
+  
+  .Playlists .list {
+    background: #f7f7f7;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .Playlists .list div {
+    margin: 10px 0;
+    padding: 5px 10px;
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
