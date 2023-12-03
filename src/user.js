@@ -1,242 +1,221 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { db } from './firebase-config';
-import { doc, getDoc, updateDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc
+} from 'firebase/firestore';
 import './user.css';
 
 const fetchUserData = async (userID) => {
-    try {
-      // Reference to the user document in Firestore
-      const userRef = doc(db, 'Users', userID);
-  
-      // Fetch the document
-      const userSnapshot = await getDoc(userRef);
-  
-      // Check if the document exists
-      if (userSnapshot.exists()) {
-        // Extract the data from the document
-        const userData = userSnapshot.data();
+  try {
+    const userRef = doc(db, 'Users', userID);
+    const userSnapshot = await getDoc(userRef);
 
-        const playlistsRef = collection(db, 'Playlist');
-        const userPlaylistsQuery = query(
-            playlistsRef,
-            where('user_id', '==', userID)
-        );
+    if (userSnapshot.exists()) {
+      const userData = userSnapshot.data();
+      const playlistsRef = collection(db, 'Playlist');
+      const userPlaylistsQuery = query(playlistsRef, where('user_id', '==', userID));
+      const playlistsSnapshot = await getDocs(userPlaylistsQuery);
+      const userPlaylists = playlistsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
 
-        const playlistsSnapshot = await getDocs(userPlaylistsQuery);
-        const userPlaylists = playlistsSnapshot.docs.map((doc) => ({
-            ...doc.data(),
-            id: doc.id,
-          }));
-
-          return { ...userData, playlists: userPlaylists };
-      } else {
-        // Handle the case where the user document does not exist
-        console.error('User document not found');
-        return null;
-      }
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-      throw error; // You might want to handle the error in your component
+      return { ...userData, playlists: userPlaylists };
+    } else {
+      console.error('User document not found');
+      return null;
     }
-  };
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    throw error;
+  }
+};
 
 function UserPlaylist() {
   const { userID } = useParams();
   const [userData, setUserData] = useState(null);
   const [newName, setNewName] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [showSearchField, setShowSearchField] = useState(false);
-  const [showCreatePlaylistForm, setShowCreatePlaylistForm] = useState(false);
   const [playlistName, setPlaylistName] = useState('');
+  const [genre, setGenre] = useState('');
+  const [subgenre, setSubgenre] = useState('');
+  const [trackSearchQuery, setTrackSearchQuery] = useState('');
+  const [trackSearchResults, setTrackSearchResults] = useState([]);
+  const [selectedTracks, setSelectedTracks] = useState([]);
+  const [showCreatePlaylistForm, setShowCreatePlaylistForm] = useState(false);
+  const [showNameChangeForm, setShowNameChangeForm] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
-        const user = await fetchUserData(userID);
-        setUserData(user);
+      const user = await fetchUserData(userID);
+      setUserData(user);
     };
+
     fetchUser();
   }, [userID]);
 
-  const updateUserName = async () => {
-    try {
-      const userRef = doc(db, 'Users', userID);
-
-      // Update the user name field
-      await updateDoc(userRef, {
-        user_name: newName,
-      });
-
-      // Fetch updated user data
-      const updatedUser = await fetchUserData(userID);
-      setUserData(updatedUser);
-    } catch (error) {
-      console.error('Error updating user name:', error);
+  const handleTrackSearch = async (event) => {
+    const searchTerm = event.target.value.toLowerCase();
+    setTrackSearchQuery(searchTerm);
+  
+    if (!searchTerm.trim()) {
+      setTrackSearchResults([]);
+      return;
     }
-  };
-
-  const handleNameChange = async (event) => {
-    event.preventDefault();
-    updateUserName();
-  };
-
-  const handleSearchChange = (event) => {
-    setSearchQuery(event.target.value);
-  };
-
-  const searchPlaylists = async () => {
-    try {
-      const playlistsRef = collection(db, 'Playlist');
-      const searchResultsQuery = query(
-        playlistsRef,
-        where('name', '==', searchQuery)
-      );
-
-      const resultsSnapshot = await getDocs(searchResultsQuery);
-      const results = resultsSnapshot.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
-      }));
-
-      setSearchResults(results);
-    } catch (error) {
-      console.error('Error searching playlists:', error);
-    }
-  };
-  const addPlaylistToUser = async (playlistId) => {
-    try {
-        const playlistsRef = collection(db, 'Playlist');
-    
-        // Add the new playlist to the collection
-        const newPlaylistDocRef = await addDoc(playlistsRef, {
-          name: playlistName,
-          user_id: userID,
-          // Add other playlist details as needed
+  
+    // Firestore does not support native case-insensitive search, so this is a limitation
+    // We will fetch all tracks and filter them on the client-side (not efficient for large datasets)
+    const tracksRef = collection(db, 'Tracks');
+    const querySnapshot = await getDocs(tracksRef);
+  
+    const tracks = [];
+    querySnapshot.forEach((doc) => {
+      const trackData = doc.data();
+      if (
+        trackData.name.toLowerCase().includes(searchTerm) ||
+        trackData.artist_name.toLowerCase().includes(searchTerm)
+      ) {
+        tracks.push({
+          id: doc.id,
+          ...trackData,
         });
-    
-        // Get the ID of the newly created playlist document
-        const newPlaylistID = newPlaylistDocRef.id;
-    
-        // Update the user's playlists with the new playlist ID
-        const userRef = doc(db, 'Users', userID);
-        const userPlaylistsField = 'playlists'; // Adjust this field based on your schema
-    
-        await updateDoc(userRef, {
-          [userPlaylistsField]: [...userData.playlists, newPlaylistID],
-        });
-    
-        // Fetch updated user data
-        const updatedUser = await fetchUserData(userID);
-        setUserData(updatedUser);
-      } catch (error) {
-        console.error('Error adding playlist to user:', error);
       }
+    });
+  
+    setTrackSearchResults(tracks);
+  };
+  
+
+  const handleSelectTrack = (track) => {
+    if (!selectedTracks.find((t) => t.id === track.id)) {
+      setSelectedTracks([...selectedTracks, track]);
+    }
   };
 
   const handleCreatePlaylistFormSubmit = async (event) => {
     event.preventDefault();
-  try {
-    const playlistsRef = collection(db, 'Playlist');
-    const newPlaylistDocRef = await addDoc(playlistsRef, {
+    if (!playlistName || !genre || !subgenre || selectedTracks.length === 0) {
+      alert('Please fill all the fields and add at least one track.');
+      return;
+    }
+  
+    // Start by creating the new playlist document
+    const playlistRef = collection(db, 'Playlist');
+    const newPlaylistDocRef = await addDoc(playlistRef, {
       name: playlistName,
+      genre: genre,
+      subgenre: subgenre,
+      playlist_tracks: selectedTracks.map((track) => track.id),
       user_id: userID,
     });
-
-    // Get the ID of the newly created playlist document
+  
+    // Get the new playlist ID
     const newPlaylistID = newPlaylistDocRef.id;
-
-    // Update the user's playlists with the new playlist ID
+  
+    // Update the user's document to include the new playlist ID
     const userRef = doc(db, 'Users', userID);
-    const userPlaylistsField = 'playlists'; // Adjust this field based on your schema
-
     await updateDoc(userRef, {
-      [userPlaylistsField]: [...userData.playlists, newPlaylistID],
+      playlists: [...(userData.playlists || []), newPlaylistID],
     });
-
-    // Fetch updated user data
+  
+    // Fetch updated user data to update the state
     const updatedUser = await fetchUserData(userID);
     setUserData(updatedUser);
-  } catch (error) {
-    console.error('Error creating playlist:', error);
-  }
+  
+    // Reset the form fields and close the form
+    setPlaylistName('');
+    setGenre('');
+    setSubgenre('');
+    setSelectedTracks([]);
+    setShowCreatePlaylistForm(false);
+    alert('Playlist created successfully!');
+  };
+  
+
+  const updateUserName = async () => {
+    const userRef = doc(db, 'Users', userID);
+    await updateDoc(userRef, { user_name: newName });
+    const updatedUser = await fetchUserData(userID);
+    setUserData(updatedUser);
+    setNewName('');
   };
 
+  const handleNameChange = (event) => {
+    event.preventDefault();
+    updateUserName();
+  };
 
   return (
     <div className="container">
       {userData ? (
         <>
-          <h1>{userData.user_name}'s Playlist</h1>
+          <h1>{userData.user_name}'s Playlists</h1>
           <p>Email: {userData.email}</p>
           <p>ID: {userData.id}</p>
-
+          <p>Playlists:
+            <ul>
+              {userData.playlists.map((playlist) => (
+                <li key={playlist.id}>{playlist.name}</li>
+              ))}
+            </ul>
+          </p>
+          {/* Toggle Name Change Form */}
+          <button onClick={() => setShowNameChangeForm(!showNameChangeForm)}>
+            {showNameChangeForm ? 'Hide Name Change Form' : 'Change Name'}
+          </button>
+          {showNameChangeForm && (
           <form onSubmit={handleNameChange}>
             <label>
               New User Name:
-              <input
-                type="text"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-              />
+              <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} />
             </label>
             <button type="submit">Change Name</button>
           </form>
+          )}
 
-          <div>
-            <button onClick={() => setShowSearchField(!showSearchField)}>
-              {showSearchField ? 'Hide Search' : 'Show Search'}
-            </button>
+          <button onClick={() => setShowCreatePlaylistForm(!showCreatePlaylistForm)}>
+            {showCreatePlaylistForm ? 'Hide Create Playlist Form' : 'Create Playlist'}
+          </button>
 
-            {showSearchField && (
-              <>
-                <h2>Search Playlist</h2>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                />
-                <button onClick={searchPlaylists}>Search</button>
-
-                <ul>
-                  {searchResults.map((playlist) => (
-                    <li key={playlist.id}>
-                      {playlist.name}
-                      <button onClick={() => addPlaylistToUser(playlist.id)}>
-                        Add to My Playlists
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-
-            <button onClick={() => setShowCreatePlaylistForm(!showCreatePlaylistForm)}>
-              {showCreatePlaylistForm ? 'Hide Create Playlist Form' : 'Create Playlist'}
-            </button>
-
-            {showCreatePlaylistForm && (
-              <form onSubmit={handleCreatePlaylistFormSubmit}>
-                <h2>Create Playlist</h2>
-                <label>
-                  Playlist Name:
-                  <input
-                    type="text"
-                    value={playlistName}
-                    onChange={(e) => setPlaylistName(e.target.value)}
-                  />
-                </label>
-                {/* Add search field for songs and logic to add songs to the playlist */}
-                <button type="submit">Create Playlist</button>
-              </form>
-            )}
-          </div>
-
-          <ul>
-            {userData.playlists.map((playlist) => (
-              <li key={playlist.id}>{playlist.name}</li>
-            ))}
-          </ul>
+          {showCreatePlaylistForm && (
+            <form onSubmit={handleCreatePlaylistFormSubmit}>
+              <h2>Create Playlist</h2>
+              <label>
+                Playlist Name:
+                <input type="text" value={playlistName} onChange={(e) => setPlaylistName(e.target.value)} />
+              </label>
+              <label>
+                Genre:
+                <input type="text" value={genre} onChange={(e) => setGenre(e.target.value)} />
+              </label>
+              <label>
+                Subgenre:
+                <input type="text" value={subgenre} onChange={(e) => setSubgenre(e.target.value)} />
+              </label>
+              <label>
+                Search Tracks:
+                <input type="text" value={trackSearchQuery} onChange={handleTrackSearch} />
+              </label>
+              <div className="track-search-results">
+                {trackSearchResults.map((track) => (
+                  <div key={track.id} onClick={() => handleSelectTrack(track)}>
+                    {track.name}
+                  </div>
+                ))}
+              </div>
+              <div>
+                <h3>Selected Tracks</h3>
+                {selectedTracks.map((track, index) => (
+                  <div key={index}>{track.name}</div>
+                ))}
+              </div>
+              <button type="submit">Create Playlist</button>
+            </form>
+          )}
         </>
       ) : (
         <p>Loading user data...</p>

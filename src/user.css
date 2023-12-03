@@ -1,22 +1,92 @@
 body {
-    margin: 0;
-    font-family: 'Arial', sans-serif;
-    background-color: #f5f5f5;
-  }
-  
-  .container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-    background-color: #fff;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    margin-top: 50px;
-    border-radius: 5px;
-  }
-  
-  h1 {
-    color: #333;
-    font-size: 24px;
-    margin-bottom: 20px;
-  }
-  
+  margin: 0;
+  font-family: 'Arial', sans-serif;
+  background-color: #f5f5f5;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #fff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  margin-top: 50px;
+  border-radius: 5px;
+}
+
+h1, h2, h3 {
+  color: #333;
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  margin: 10px 0;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+form {
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+input[type="text"] {
+  width: calc(100% - 22px);
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.selected-tracks {
+  margin-top: 10px;
+  background-color: #e2e3e5;
+  border-radius: 5px;
+  list-style: none;
+  padding: 10px;
+}
+
+.selected-tracks div {
+  padding: 5px;
+  margin: 5px 0;
+}
+
+ul {
+  padding-left: 20px;
+}
+
+ul li {
+  margin-bottom: 5px;
+}
+.track-search-results {
+  margin-top: 10px;
+  background-color: #e9ecef;
+  border-radius: 5px;
+  list-style: none;
+  padding: 10px;
+  max-height: 200px; /* Adjust the height based on your design */
+  overflow-y: auto;
+}
+
+.track-search-results div {
+  padding: 5px;
+  cursor: pointer;
+  border-bottom: 1px solid #ddd; /* Optional: adds a line between tracks */
+}
+
+.track-search-results div:hover {
+  background-color: #dcdcdc;
+}
