@@ -1,6 +1,7 @@
 //firebase imports
 import { db } from './firebase-config';
 import { collection, getDocs, addDoc, doc, setDoc } from 'firebase/firestore';
+import {Link} from 'react-router-dom';
 
 import React, { useEffect, useState } from 'react';
 import './playlists.css';
@@ -51,7 +52,7 @@ function Playlists() {
             <div className="list">
               <h2>Users</h2>
               {users.map(user => (
-                <div key={user.id}>{user.user_name}</div>
+                <div key={user.id}><Link to={`/${user.id}`}>{user.user_name}</Link></div>
               ))}
             </div>
             <div className="list">

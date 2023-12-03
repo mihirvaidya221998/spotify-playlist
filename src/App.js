@@ -5,6 +5,7 @@ import logo from './logo.svg';
 import './App.css';
 import uploadData from './uploadData';
 import Playlists from './playlists';
+import Users from './user';
 
 
 function Home() {
@@ -43,6 +44,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/upload" element={<Upload />} />
         <Route path="/playlists" element={<Playlists />}/>
+        <Route path='/:userID' element={<Users/>}/>
       </Routes>
     </Router>
   );
