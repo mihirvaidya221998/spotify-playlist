@@ -5,7 +5,6 @@ import logo from './logo.svg';
 import './App.css';
 import uploadData from './uploadData';
 import Playlists from './playlists';
-import Visualizations from './visualization'
 import Users from './user';
 
 
@@ -18,7 +17,6 @@ function Home() {
       <p>Welcome to Spotify Generator, where you can create custom spotify playlists.</p>
       <button onClick={() => navigate('/playlists')}>Data Page</button>
       <button onClick={() => navigate('/upload')}>Upload Data Page (from csv)</button>
-      <button onClick={() => navigate('/visualization')}>Show Visualizations</button>
     </header>
   );
 }
@@ -47,7 +45,6 @@ function App() {
         <Route path="/upload" element={<Upload />} />
         <Route path="/playlists" element={<Playlists />}/>
         <Route path='/:userID' element={<Users/>}/>
-        <Route path='/visualization' element={<Visualizations/>}/>
       </Routes>
     </Router>
   );
