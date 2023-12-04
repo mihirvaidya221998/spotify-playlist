@@ -1,17 +1,41 @@
 import Papa from 'papaparse';
 import { db } from './firebase-config';
-import { collection, getDocs, addDoc, doc, setDoc } from 'firebase/firestore';
+import { getDoc, updateDoc, doc, setDoc } from 'firebase/firestore';
 
 
 // Function to upload data to Firestore
 const uploadDataToFirestore = async (data, collectionName) => {
-    data.forEach(async item => {
+  for (const item of data) {
+    try {
       const docRef = doc(db, collectionName, item.id);
-      await setDoc(docRef, item)
-        .then(() => console.log(`Document written in ${collectionName}`))
-        .catch((error) => console.error("Error adding document: ", error));
-    });
-  };
+      await setDoc(docRef, item);
+      console.log(`Document written in ${collectionName}`);
+
+      // If uploading playlists, also update the corresponding user document
+      if (collectionName === 'Playlist' && item.user_id) {
+        await updateUserPlaylists(item.user_id, item.id);
+      }
+    } catch (error) {
+      console.error("Error adding document: ", error);
+    }
+  }
+};
+
+const updateUserPlaylists = async (userId, playlistId) => {
+  const userRef = doc(db, 'Users', userId);
+  const userSnapshot = await getDoc(userRef);
+
+  if (userSnapshot.exists()) {
+    const userData = userSnapshot.data();
+    // Check if the playlistId is already in the user's playlists array
+    if (!userData.playlists || !userData.playlists.includes(playlistId)) {
+      const updatedPlaylists = userData.playlists ? [...userData.playlists, playlistId] : [playlistId];
+      await updateDoc(userRef, { playlists: updatedPlaylists });
+    }
+  } else {
+    console.error('User document not found - cannot update playlists array.');
+  }
+};
 
 
   const generateRandomUsers = (count) => {
@@ -59,6 +83,7 @@ const uploadDataToFirestore = async (data, collectionName) => {
     }
     return newPlaylists;
   };
+
 
 // Function to parse CSV and organize data 
 const parseAndUploadCSV = () => {

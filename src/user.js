@@ -9,7 +9,8 @@ import {
   query,
   where,
   getDocs,
-  addDoc
+  addDoc,
+  deleteDoc
 } from 'firebase/firestore';
 import './user.css';
 
@@ -48,6 +49,12 @@ function UserPlaylist() {
   const [selectedTracks, setSelectedTracks] = useState([]);
   const [showCreatePlaylistForm, setShowCreatePlaylistForm] = useState(false);
   const [showNameChangeForm, setShowNameChangeForm] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editablePlaylist, setEditablePlaylist] = useState(null);
+  const [editTrackSearchQuery, setEditTrackSearchQuery] = useState('');
+  const [editTrackSearchResults, setEditTrackSearchResults] = useState([]);
+
+
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -116,10 +123,20 @@ function UserPlaylist() {
     // Get the new playlist ID
     const newPlaylistID = newPlaylistDocRef.id;
   
-    // Update the user's document to include the new playlist ID
+    // Create an object representing the new playlist to add to the user's playlists array
+    const newPlaylistObject = {
+      id: newPlaylistID,
+      name: playlistName,    // The name of the playlist
+      genre: genre,         // The genre of the playlist
+      subgenre: subgenre,   // The subgenre of the playlist
+      playlist_tracks: selectedTracks.map((track) => track.id), // IDs of the tracks in the playlist
+      user_id: userID
+    };
+  
+    // Update the user's document to include the new playlist
     const userRef = doc(db, 'Users', userID);
     await updateDoc(userRef, {
-      playlists: [...(userData.playlists || []), newPlaylistID],
+      playlists: [...(userData.playlists || []), newPlaylistObject],
     });
   
     // Fetch updated user data to update the state
@@ -135,6 +152,8 @@ function UserPlaylist() {
     alert('Playlist created successfully!');
   };
   
+  
+  
 
   const updateUserName = async () => {
     const userRef = doc(db, 'Users', userID);
@@ -149,6 +168,171 @@ function UserPlaylist() {
     updateUserName();
   };
 
+  const handleEditPlaylist = async (playlist) => {
+    setIsEditMode(true);
+    const trackDetails = await fetchTrackDetails(playlist.playlist_tracks);
+    setEditablePlaylist({ ...playlist, playlist_tracks: trackDetails });
+  };
+
+  const handleSaveChanges = async (event) => {
+    event.preventDefault();
+  
+    try {
+      // Extract only the track IDs to update the Firestore document
+      const trackIds = editablePlaylist.playlist_tracks.map(track => track.id);
+  
+      // Prepare the updated playlist data
+      const updatedPlaylistData = {
+        ...editablePlaylist,
+        playlist_tracks: trackIds  // Updating with only track IDs
+      };
+  
+      // Remove fields that should not be saved to the Playlist collection
+      delete updatedPlaylistData.id;
+  
+      // Update the playlist in the Playlist collection
+      const playlistRef = doc(db, 'Playlist', editablePlaylist.id);
+      await updateDoc(playlistRef, updatedPlaylistData);
+      
+      // Update the playlist details in the user's playlists array
+      const userRef = doc(db, 'Users', userID);
+      const userData = (await getDoc(userRef)).data();
+      const updatedUserPlaylists = userData.playlists.map(p => 
+        p.id === editablePlaylist.id ? { ...p, ...updatedPlaylistData } : p
+      );
+      await updateDoc(userRef, { playlists: updatedUserPlaylists });
+      
+      // Fetch and update the user data to reflect changes in the local state
+      const updatedUser = await fetchUserData(userID);
+      setUserData(updatedUser);
+      
+      // Notify the user of success, reset edit state and close the form
+      alert('Playlist updated successfully!');
+      setIsEditMode(false);
+      setEditablePlaylist(null);
+  
+    } catch (error) {
+      console.error("Error updating playlist: ", error);
+      alert("An error occurred while saving changes. Please try again.");
+    }
+  };
+  
+  
+      const handleDeletePlaylist = async (playlistId) => {
+        // Confirm before deletion
+        if (!window.confirm("Are you sure you want to delete this playlist?")) {
+          return;
+        }
+      
+        try {
+          // Delete the playlist from the Playlist collection
+          const playlistRef = doc(db, 'Playlist', playlistId);
+          await deleteDoc(playlistRef);
+          
+          // Remove the playlist from the user's playlists array
+          const userRef = doc(db, 'Users', userID);
+          const userData = (await getDoc(userRef)).data();
+          const updatedPlaylists = userData.playlists.filter(p => p.id !== playlistId);
+          await updateDoc(userRef, { playlists: updatedPlaylists });
+          
+          // Update local state to reflect the changes
+          const newUserData = { ...userData, playlists: updatedPlaylists };
+          setUserData(newUserData);
+      
+        } catch (error) {
+          console.error("Error deleting playlist: ", error);
+          alert("An error occurred while deleting the playlist. Please try again.");
+        }
+      
+        // Exit edit mode
+        setIsEditMode(false);
+        setEditablePlaylist(null);
+      };
+
+              // Handler for updating the editable playlist's name
+        const handlePlaylistNameChange = (event) => {
+          setEditablePlaylist((prevPlaylist) => ({
+            ...prevPlaylist,
+            name: event.target.value,
+          }));
+        };
+
+        // Handler for updating the editable playlist's genre
+        const handlePlaylistGenreChange = (event) => {
+          setEditablePlaylist((prevPlaylist) => ({
+            ...prevPlaylist,
+            genre: event.target.value,
+          }));
+        };
+
+        // Handler for updating the editable playlist's subgenre
+        const handlePlaylistSubgenreChange = (event) => {
+          setEditablePlaylist((prevPlaylist) => ({
+            ...prevPlaylist,
+            subgenre: event.target.value,
+          }));
+        };
+        const handleEditTrackSearch = async (event) => {
+            const searchTerm = event.target.value.toLowerCase();
+            setEditTrackSearchQuery(searchTerm);
+          
+            if (!searchTerm.trim()) {
+              setEditTrackSearchResults([]);
+              return;
+            }
+          
+            const tracksRef = collection(db, 'Tracks');
+            const querySnapshot = await getDocs(tracksRef);
+          
+            const tracks = [];
+            querySnapshot.forEach((doc) => {
+              const trackData = doc.data();
+              if (
+                trackData.name.toLowerCase().includes(searchTerm) ||
+                (trackData.artist_name && trackData.artist_name.toLowerCase().includes(searchTerm))
+              ) {
+                tracks.push({
+                  id: doc.id,
+                  ...trackData,
+                });
+              }
+            });
+          
+            setEditTrackSearchResults(tracks);
+          };
+        
+          const handleAddTrackToEditablePlaylist = (track) => {
+            setEditablePlaylist((prevPlaylist) => ({
+              ...prevPlaylist,
+              playlist_tracks: [...prevPlaylist.playlist_tracks, track],
+            }));
+          };
+          
+          const handleRemoveTrackFromEditablePlaylist = (trackId) => {
+            setEditablePlaylist((prevPlaylist) => ({
+              ...prevPlaylist,
+              playlist_tracks: prevPlaylist.playlist_tracks.filter((track) => track.id !== trackId),
+            }));
+          };
+          
+
+        const fetchTrackDetails = async (trackIds) => {
+          const tracksRef = collection(db, 'Tracks');
+          const trackDetails = [];
+        
+          for (const id of trackIds) {
+            const trackRef = doc(tracksRef, id);
+            const trackSnapshot = await getDoc(trackRef);
+            if (trackSnapshot.exists()) {
+              trackDetails.push({ id, ...trackSnapshot.data() });
+            }
+          }
+        
+          return trackDetails;
+        };
+        
+  
+
   return (
     <div className="container">
       {userData ? (
@@ -159,10 +343,67 @@ function UserPlaylist() {
           <p>Playlists:
             <ul>
               {userData.playlists.map((playlist) => (
-                <li key={playlist.id}>{playlist.name}</li>
+                <li key={playlist.id} onClick={() => handleEditPlaylist(playlist)}>{playlist.name}</li>
               ))}
             </ul>
           </p>
+          {isEditMode && editablePlaylist && (
+            <div>
+              <h2>Edit Playlist</h2>
+              <form onSubmit={handleSaveChanges}>
+              <label>
+                  Playlist Name:
+                  <input
+                    type="text"
+                    value={editablePlaylist.name}
+                    onChange={handlePlaylistNameChange}
+                  />
+                </label>
+                <label>
+                  Genre:
+                  <input
+                    type="text"
+                    value={editablePlaylist.genre}
+                    onChange={handlePlaylistGenreChange}
+                  />
+                </label>
+                <label>
+                  Subgenre:
+                  <input
+                    type="text"
+                    value={editablePlaylist.subgenre}
+                    onChange={handlePlaylistSubgenreChange}
+                  />
+                </label>
+                <label>
+                    Search Tracks to Add:
+                    <input
+                      type="text"
+                      value={editTrackSearchQuery}
+                      onChange={handleEditTrackSearch}
+                    />
+                  </label>
+                  {editTrackSearchResults.map((track) => (
+                    <div key={track.id} onClick={() => handleAddTrackToEditablePlaylist(track)}>
+                      {track.name}
+                    </div>
+                  ))}
+                  <h3>Current Tracks</h3>
+                  <ul>
+                    {editablePlaylist.playlist_tracks.map((track) => (
+                      <li key={track.id}>
+                        {track.name} - {track.artist_name}
+                        <button type="button" onClick={() => handleRemoveTrackFromEditablePlaylist(track.id)}>
+                          Delete Track
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                <button type="submit">Save Changes</button>
+                <button onClick={() => handleDeletePlaylist(editablePlaylist.id)}>Delete Playlist</button>
+              </form>
+            </div>
+          )}
           {/* Toggle Name Change Form */}
           <button onClick={() => setShowNameChangeForm(!showNameChangeForm)}>
             {showNameChangeForm ? 'Hide Name Change Form' : 'Change Name'}
