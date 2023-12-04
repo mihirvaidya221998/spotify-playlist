@@ -1,41 +1,22 @@
 import Papa from 'papaparse';
 import { db } from './firebase-config';
-import { getDoc, updateDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, setDoc } from 'firebase/firestore';
 
 
-// Function to upload data to Firestore
 const uploadDataToFirestore = async (data, collectionName) => {
-  for (const item of data) {
-    try {
+  data.forEach(async item => {
+    if (item.id) { // Check if id exists
       const docRef = doc(db, collectionName, item.id);
-      await setDoc(docRef, item);
-      console.log(`Document written in ${collectionName}`);
-
-      // If uploading playlists, also update the corresponding user document
-      if (collectionName === 'Playlist' && item.user_id) {
-        await updateUserPlaylists(item.user_id, item.id);
-      }
-    } catch (error) {
-      console.error("Error adding document: ", error);
+      await setDoc(docRef, item)
+        .then(() => console.log(`Document written in ${collectionName}`))
+        .catch((error) => console.error("Error adding document: ", error));
+    } else {
+      // Handle items without id, like logging or generating a new id
+      console.log(`Skipping item due to missing id in collection ${collectionName}`);
     }
-  }
+  });
 };
 
-const updateUserPlaylists = async (userId, playlistId) => {
-  const userRef = doc(db, 'Users', userId);
-  const userSnapshot = await getDoc(userRef);
-
-  if (userSnapshot.exists()) {
-    const userData = userSnapshot.data();
-    // Check if the playlistId is already in the user's playlists array
-    if (!userData.playlists || !userData.playlists.includes(playlistId)) {
-      const updatedPlaylists = userData.playlists ? [...userData.playlists, playlistId] : [playlistId];
-      await updateDoc(userRef, { playlists: updatedPlaylists });
-    }
-  } else {
-    console.error('User document not found - cannot update playlists array.');
-  }
-};
 
 
   const generateRandomUsers = (count) => {
@@ -55,35 +36,39 @@ const updateUserPlaylists = async (userId, playlistId) => {
   const generateAdditionalPlaylists = (users, tracks, count) => {
     const newPlaylists = [];
     const genresAndSubgenres = [
-      "Trap", "Techno", "Techhouse", "Trance", "Psytrance", 
-      "Dark Trap", "DnB", "Hardstyle", "Underground Rap", 
-      "Trap Metal", "Emo", "Rap", "RnB", "Pop", "Hiphop"
+      // ... your genres and subgenres
     ];
-    for (let i = 1; i <= count; i++) {
-      const randomUserId = users[Math.floor(Math.random() * users.length)].user_id;
-      const playlistTracks = [];
-      const numberOfTracks = Math.floor(Math.random() * 6) + 5; // 5 to 10 tracks
-      for (let j = 0; j < numberOfTracks; j++) {
-        const randomTrackId = tracks[Math.floor(Math.random() * tracks.length)].id;
-        playlistTracks.push(randomTrackId);
-      }
-
-        // Randomly select genre and subgenre
-      const randomGenreIndex = Math.floor(Math.random() * genresAndSubgenres.length);
-      const randomSubgenreIndex = Math.floor(Math.random() * genresAndSubgenres.length);
   
-      newPlaylists.push({
-        id: `playlist_${i}`,
-        name: `Playlist ${i}`,
-        genre: genresAndSubgenres[randomGenreIndex],
-        subgenre: genresAndSubgenres[randomSubgenreIndex], 
-        user_id: randomUserId,
-        playlist_tracks: playlistTracks
-      });
+    for (let i = 1; i <= count; i++) {
+      if (users.length > 0 && genresAndSubgenres.length > 0) {
+        const randomUser = users[Math.floor(Math.random() * users.length)];
+        const playlistTracks = [];
+        const numberOfTracks = Math.floor(Math.random() * 6) + 5; // 5 to 10 tracks
+  
+        for (let j = 0; j < numberOfTracks; j++) {
+          const randomTrack = tracks[Math.floor(Math.random() * tracks.length)];
+          playlistTracks.push(randomTrack.id);
+        }
+  
+        const randomGenreIndex = Math.floor(Math.random() * genresAndSubgenres.length);
+        const randomSubgenreIndex = Math.floor(Math.random() * genresAndSubgenres.length);
+  
+        newPlaylists.push({
+          id: `playlist_${i}`,
+          name: `Playlist ${i}`,
+          genre: genresAndSubgenres[randomGenreIndex],
+          subgenre: genresAndSubgenres[randomSubgenreIndex] || 'Unknown', // Default to 'Unknown' if undefined
+          user_id: randomUser.id,
+          playlist_tracks: playlistTracks
+        });
+      } else {
+        console.log('No users or genres/subgenres available to create playlists');
+      }
     }
+  
     return newPlaylists;
   };
-
+  
 
 // Function to parse CSV and organize data 
 const parseAndUploadCSV = () => {

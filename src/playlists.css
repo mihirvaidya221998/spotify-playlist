@@ -27,6 +27,8 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     max-height: 70vh; /* Set the maximum height according to your design */
     overflow-y: auto;
+    max-width: 50vh; /* Set the maximum height according to your design */
+    overflow-x: auto;
     margin: 0.5vh;
   }
   
